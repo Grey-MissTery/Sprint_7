@@ -9,15 +9,28 @@ class TestCourierCreate:
     @allure.title('Позитивный сценарий создания курьера: передаем все обязательные поля (логин, пароль).')
     @allure.description('ОР: Курьер успешно создан.')
     def test_create_courier_login_password_created_successfully(self, courier):
-        response, _ = courier
-        assert response[0] == 201 and response[1]['ok'] == True
+        # courier теперь содержит только данные, не созданного курьера
+        courier_data = courier
+        
+        # ВЫЗЫВАЕМ МЕТОД В ТЕСТЕ
+        status_code, response_data = CourierMethods().create_courier(courier_data)
+        
+        assert status_code == 201
+        assert response_data['ok'] == True
 
     @allure.title('Негативный сценарий создания курьера: логин уже есть в системе.')
     @allure.description('ОР: Нельзя создать двух одинаковых курьеров, запрос возвращает ошибку.')
     def test_create_courier_duplicate_login_error_409(self, courier):
-        response = courier[1]
-        status_code, response_data = CourierMethods().create_courier(response)
-        assert status_code == 409 and response_data['message'] == RegErrors.DUPLICATE_LOGIN
+        courier_data = courier
+        
+        # 1. Создаём первого курьера
+        CourierMethods().create_courier(courier_data)
+        
+        # 2. Пытаемся создать второго с теми же данными
+        status_code, response_data = CourierMethods().create_courier(courier_data)
+        
+        assert status_code == 409
+        assert response_data['message'] == RegErrors.DUPLICATE_LOGIN
 
     @allure.title('Негативный сценарий создания курьера: передаем пустой логин или пустой пароль.')
     @allure.description('ОР: Курьер не создан, запрос возвращает ошибку.')
@@ -48,3 +61,4 @@ class TestCourierLogin:
     def test_login_courier_empty_login_or_password_bad_request_400(self, payload):
         status_code, response_data = CourierMethods().login_courier(payload)
         assert status_code == 400 and response_data["message"] == LoginErrors.MISSING_AUTH_DATA
+        
